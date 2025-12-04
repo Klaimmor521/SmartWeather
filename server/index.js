@@ -1,17 +1,83 @@
 const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
+const fs = require('fs');
 
 const app = express();
-const PORT = 3000;
+const PORT = 5000;
 
-app.use(cors());
+app.use(cors({origin: ['http://localhost:3000', 'http://localhost:4200']}));
 app.use(express.json());
 
-const API_KEY = '36d50369bdbb2105a5e53846ba75bac2'; 
+const API_KEY = '36d50369bdbb2105a5e53846ba75bac2';
+const FILE_PATH = './database.json';
 
-// Маршрут для получения погоды
-app.get('/api/weather', async (req, res) => {
+// Список сохраненных городов
+app.get('/cities', (req, res) => {
+    fs.readFile(FILE_PATH, 'utf8', (err, data) => {
+        if (err) return res.send([]);
+        res.send(JSON.parse(data || '[]'));
+    });
+});
+
+// Добавить город
+app.post('/cities', async (req, res) => {
+    const cityName = req.body.name;
+    if (!cityName) return res.status(400).send({ message: 'Имя города обязательно' });
+
+    if (cityName.length > 50) 
+    {
+        return res.status(400).send({ message: 'Слишком длинное название города!' });
+    }
+
+    try 
+    {
+        // Проверка существования города через API
+        const checkUrl = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(cityName)}&appid=${API_KEY}`;
+        await axios.get(checkUrl);
+
+        // Если API не выдал ошибку, значит город настоящий
+        fs.readFile(FILE_PATH, 'utf8', (err, data) => 
+        {
+            const cities = JSON.parse(data || '[]');
+            
+            // Проверка на дубликаты
+            if (cities.find(c => c.name.toLowerCase() === cityName.toLowerCase())) 
+            {
+                return res.status(400).send({ message: 'Город уже отслеживается' });
+            }
+
+            const newCity = { id: Date.now(), name: cityName };
+            cities.push(newCity);
+
+            fs.writeFile(FILE_PATH, JSON.stringify(cities, null, 2), () => 
+            {
+                res.send(newCity);
+            });
+        });
+
+    } 
+    catch (error) 
+    {
+        console.log('Ошибка проверки города:', error.message);
+        return res.status(404).send({ message: 'Такого города не существует!' });
+    }
+});
+
+// Удалить город
+app.delete('/cities/:id', (req, res) => {
+    const idToDelete = Number(req.params.id);
+    fs.readFile(FILE_PATH, 'utf8', (err, data) => {
+        let cities = JSON.parse(data || '[]');
+        cities = cities.filter(c => c.id !== idToDelete);
+        fs.writeFile(FILE_PATH, JSON.stringify(cities, null, 2), () => {
+            res.send({ success: true });
+        });
+    });
+});
+
+// Получение погоды
+app.get('/weather', async (req, res) => {
     const city = req.query.city;
 
     if (!city) 
@@ -21,12 +87,12 @@ app.get('/api/weather', async (req, res) => {
 
     try 
     {
-        // 1. Запрашиваем погоду у OpenWeatherMap
+        // Запрашиваем погоду у OpenWeatherMap
         const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(city)}&units=metric&lang=ru&appid=${API_KEY}`;
         const response = await axios.get(url);
         const data = response.data;
 
-        // 2. Советы
+        // Советы
         let advice = '';
         const temp = data.main.temp;
         const feelsLike = data.main.feels_like;
@@ -34,50 +100,66 @@ app.get('/api/weather', async (req, res) => {
         const windSpeed = data.wind.speed;
 
         // Базовая одежда по температуре
-        if (feelsLike < -25) {
+        if (feelsLike < -25) 
+        {
             advice = 'Одевайся как капуста! Термобелье, свитер и самый теплый пуховик.';
-        } else if (feelsLike < -10) {
+        } 
+        else if (feelsLike < -10) 
+        {
             advice = 'Морозно. Шапка, шарф, перчатки и зимняя куртка обязательны.';
-        } else if (feelsLike < 0) {
+        } 
+        else if (feelsLike < 0) 
+        {
             advice = 'Холодно. Теплое пальто или пуховик будут в самый раз.';
-        } else if (feelsLike >= 0 && feelsLike < 10) {
+        } 
+        else if (feelsLike >= 0 && feelsLike < 10) 
+        {
             advice = 'Прохладно. Демисезонная куртка, пальто или теплый худи с жилеткой.';
-        } else if (feelsLike >= 10 && feelsLike < 20) {
+        } 
+        else if (feelsLike >= 10 && feelsLike < 20) 
+        {
             advice = 'Комфортно. Ветровка, джинсовка или просто толстовка.';
-        } else if (feelsLike >= 20 && feelsLike < 30) {
+        } 
+        else if (feelsLike >= 20 && feelsLike < 30) 
+        {
             advice = 'Тепло! Футболка, джинсы или легкое платье.';
-        } else {
-            advice = 'Жара! Шорты, майка, сандалии. Ищи тень!';
+        } 
+        else 
+        {
+            advice = 'Жара! Закрывающая одежда из хлопка, сандали. Ищи тень!';
         }
 
         // Корректировка по осадкам и небу
-        if (weatherId >= 200 && weatherId <= 531) {
+        if (weatherId >= 200 && weatherId <= 531) 
+        {
             advice += ' На улице мокро: возьми зонт и непромокаемую обувь.';
         } 
-        else if (weatherId >= 600 && weatherId <= 622) {
+        else if (weatherId >= 600 && weatherId <= 622) 
+        {
             advice += ' Идет снег: капюшон или шапка точно пригодятся.';
         }
-        else if (weatherId === 800 && temp > 20) {
+        else if (weatherId === 800 && temp > 20) 
+        {
             advice += ' Солнце яркое: не забудь солнечные очки и кепку.';
         }
-        if (windSpeed > 10) {
+        if (windSpeed > 10) 
+        {
             advice += ' 🌬 Сильный ветер! Лучше надеть что-то непродуваемое.';
         }
 
-        // 3. Формируем ответ для Angular
-        const result = 
-        {
-            city: data.name,
-            temp: Math.round(temp),
-            description: data.weather[0].description,
+        // Ответ для Angular
+        res.json({
+            name: data.name,
+            temp: Math.round(data.main.temp),
+            feels_like: Math.round(feelsLike),
+            desc: data.weather[0].description,
             icon: `https://openweathermap.org/img/wn/${data.weather[0].icon}@2x.png`,
             advice: advice,
-            wind: data.wind.speed,        
-            pressure: data.main.pressure, 
+            wind: Math.round(data.wind.speed),
+            pressure: data.main.pressure,
             humidity: data.main.humidity,
-            feels_like: Math.round(data.main.feels_like),
             visibility: (data.visibility / 1000).toFixed(1)
-        };
+        });
 
         res.json(result);
 

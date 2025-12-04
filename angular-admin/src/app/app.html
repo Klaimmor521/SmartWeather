@@ -1,0 +1,37 @@
+<div class="container">
+  <h1>⚙️ Админка Погоды</h1>
+  
+  <!-- Форма -->
+  <div class="form-box">
+    <h3>Добавить город:</h3>
+    
+    <!-- Группа -->
+    <div class="input-group">
+        <input 
+            placeholder="Начни вводить (напр. Сочи)" 
+            [(ngModel)]="cityName" 
+            (input)="onInput()"
+            autocomplete="off">
+        
+        <button (click)="addCity()" [disabled]="!cityName">Добавить</button>
+
+        <!-- Список -->
+        <ul class="suggestions" *ngIf="filteredCities.length > 0">
+            <li *ngFor="let c of filteredCities" (click)="selectCity(c)">
+                {{ c }}
+            </li>
+        </ul>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- Список сохраненых городов -->
+  <h3>Отслеживаемые города:</h3>
+  <div *ngIf="savedCities.length === 0" style="color: gray;">Список пуст...</div>
+
+  <div *ngFor="let city of savedCities" class="city-item">
+    <b>{{ city.name }}</b>
+    <button class="del-btn" (click)="deleteCity(city.id)">Удалить</button>
+  </div>
+</div>

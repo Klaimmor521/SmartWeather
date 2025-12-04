@@ -1,0 +1,74 @@
+.container { max-width: 600px; margin: 30px auto; font-family: 'Segoe UI', sans-serif; }
+    
+h1 { text-align: center; color: #333; }
+
+.form-box 
+{ 
+  background: #fff; 
+  padding: 20px; 
+  border-radius: 10px; 
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+  position: relative; 
+}
+
+.input-group { position: relative; display: flex; gap: 10px; }
+
+input 
+{ 
+  flex-grow: 1;
+  padding: 10px; 
+  border: 1px solid #ddd; 
+  border-radius: 5px; 
+  font-size: 16px;
+}
+
+button 
+{ 
+  padding: 10px 20px; 
+  background: #28a745; 
+  color: white; 
+  border: none; 
+  border-radius: 5px; 
+  cursor: pointer; 
+  font-size: 16px;
+}
+button:disabled { background: #ccc; cursor: not-allowed; }
+
+.suggestions 
+{ 
+  position: absolute; 
+  top: 100%;
+  left: 0; 
+  width: 100%;
+  background: white; 
+  border: 1px solid #ddd; 
+  list-style: none;
+  padding: 0; 
+  margin: 5px 0 0 0; 
+  z-index: 1000;
+  max-height: 200px; 
+  overflow-y: auto;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+  border-radius: 0 0 8px 8px;
+}
+
+.suggestions li 
+{ 
+  padding: 12px; 
+  cursor: pointer; 
+  border-bottom: 1px solid #f0f0f0; 
+  transition: 0.2s;
+}
+.suggestions li:hover { background: #f8f9fa; color: #28a745; }
+
+.city-item 
+{ 
+  background: white;
+  border-bottom: 1px solid #eee; 
+  padding: 15px; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center;
+  font-size: 18px;
+}
+.del-btn { background: #dc3545; font-size: 14px; padding: 8px 12px; }
